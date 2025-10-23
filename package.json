@@ -1,0 +1,23 @@
+{
+  "name": "avrora-monitor-electron",
+  "version": "1.0.0",
+  "description": "Avrora Monitor Electron App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "keywords": ["electron", "monitor", "avrora"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "sqlite3": "^5.1.6",
+    "active-win": "^9.0.0",
+    "node-machine-id": "^1.1.12"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.6.4"
+  }
+}

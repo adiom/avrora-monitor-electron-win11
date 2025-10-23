@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avrora Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .advice-list {
+            list-style: none;
+        }
+
+        .advice-item {
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .advice-positive {
+            background: rgba(76, 175, 80, 0.2);
+            border-left-color: #4CAF50;
+        }
+
+        .advice-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border-left-color: #FFC107;
+        }
+
+        .advice-suggestion {
+            background: rgba(33, 150, 243, 0.2);
+            border-left-color: #2196F3;
+        }
+
+        .advice-info {
+            background: rgba(158, 158, 158, 0.2);
+            border-left-color: #9E9E9E;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            opacity: 0.7;
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .summary-text {
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Avrora Monitor</h1>
+        <p class="subtitle">Мониторинг активности и персональные советы</p>
+        <button class="refresh-btn" onclick="loadData()">🔄 Обновить данные</button>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h3>📊 Статистика за день</h3>
+            <div id="stats-content" class="loading">Загрузка...</div>
+        </div>
+
+        <div class="card">
+            <h3>💡 Советы Авроры</h3>
+            <div id="advice-content" class="loading">Загрузка...</div>
+        </div>
+
+        <div class="card full-width">
+            <h3>📝 Сводка за день</h3>
+            <div id="summary-content" class="loading">Загрузка...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                // Загружаем статистику
+                const stats = await window.electronAPI.getDailyStats();
+                displayStats(stats);
+
+                // Загружаем советы
+                const advice = await window.electronAPI.getAdvice();
+                displayAdvice(advice);
+
+                // Загружаем сводку
+                const summary = await window.electronAPI.getDailySummary();
+                displaySummary(summary);
+
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                document.getElementById('stats-content').innerHTML = 'Ошибка загрузки данных';
+                document.getElementById('advice-content').innerHTML = 'Ошибка загрузки данных';
+                document.getElementById('summary-content').innerHTML = 'Ошибка загрузки данных';
+            }
+        }
+
+        function displayStats(stats) {
+            const container = document.getElementById('stats-content');
+            
+            if (!stats || stats.totalTime === 0) {
+                container.innerHTML = '<p>Нет данных за сегодня</p>';
+                return;
+            }
+
+            const productiveRatio = Math.round((stats.productiveTime / stats.totalTime) * 100);
+            
+            container.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${formatTime(stats.totalTime)}</div>
+                        <div class="stat-label">Общее время</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${formatTime(stats.productiveTime)}</div>
+                        <div class="stat-label">Продуктивное время</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${productiveRatio}%</div>
+                        <div class="stat-label">Продуктивность</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${Object.keys(stats.appsUsed || {}).length}</div>
+                        <div class="stat-label">Приложений</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayAdvice(advice) {
+            const container = document.getElementById('advice-content');
+            
+            if (!advice || advice.length === 0) {
+                container.innerHTML = '<p>Пока нет советов</p>';
+                return;
+            }
+
+            const adviceHtml = advice.map(item => `
+                <div class="advice-item advice-${item.type}">
+                    ${item.message}
+                </div>
+            `).join('');
+
+            container.innerHTML = `<ul class="advice-list">${adviceHtml}</ul>`;
+        }
+
+        function displaySummary(summary) {
+            const container = document.getElementById('summary-content');
+            container.innerHTML = `<div class="summary-text">${summary}</div>`;
+        }
+
+        function formatTime(milliseconds) {
+            const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+            const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 0) {
+                return `${hours}ч ${minutes}м`;
+            } else {
+                return `${minutes}м`;
+            }
+        }
+
+        // Загружаем данные при запуске
+        document.addEventListener('DOMContentLoaded', loadData);
+        
+        // Обновляем данные каждые 30 секунд
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
